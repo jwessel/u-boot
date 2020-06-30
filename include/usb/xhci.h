@@ -1227,6 +1227,11 @@ struct xhci_ctrl {
 	struct xhci_scratchpad *scratchpad;
 	struct xhci_virt_device *devs[MAX_HC_SLOTS];
 	int rootdev;
+	bool poll_pend; /* Pending state for polling for an event for a udev */
+	unsigned long bulk_tx_poll_ts;
+	void *last_bulk_tx_buf;
+	struct usb_device *poll_last_udev;
+	int poll_last_ep_index;
 };
 
 unsigned long trb_addr(struct xhci_segment *seg, union xhci_trb *trb);
