@@ -994,6 +994,9 @@ int chunk_msg(struct dwc2_priv *priv, struct usb_device *dev,
 				     xfer_len, &actual_len, odd_frame);
 
 		hcint = readl(&hc_regs->hcint);
+		/* If there is a stall try again */
+		if (hcint & DWC2_HCINT_STALL)
+			ret = 0;
 		if (complete_split) {
 			stop_transfer = 0;
 			if (hcint & DWC2_HCINT_NYET) {
