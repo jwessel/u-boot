@@ -675,6 +675,7 @@ static int xhci_address_device(struct usb_device *udev, int root_portnr)
 	struct xhci_virt_device *virt_dev;
 	int slot_id = udev->slot_id;
 	union xhci_trb *event;
+	int retry_cnt = 0;
 
 	virt_dev = ctrl->devs[slot_id];
 
@@ -685,6 +686,7 @@ static int xhci_address_device(struct usb_device *udev, int root_portnr)
 	debug("Setting up addressable devices %p\n", ctrl->dcbaa);
 	xhci_setup_addressable_virt_dev(ctrl, udev, root_portnr);
 
+retry:
 	ctrl_ctx = xhci_get_input_control_ctx(virt_dev->in_ctx);
 	ctrl_ctx->add_flags = cpu_to_le32(SLOT_FLAG | EP0_FLAG);
 	ctrl_ctx->drop_flags = 0;
@@ -701,6 +703,13 @@ static int xhci_address_device(struct usb_device *udev, int root_portnr)
 		ret = -EINVAL;
 		break;
 	case COMP_TX_ERR:
+		retry_cnt++;
+		if (retry_cnt < 2) {
+			/* Retry in case this was just after a port reset */
+			debug("COMP_TX_ERR retry\n");
+			xhci_acknowledge_event(ctrl);
+			goto retry;
+		}
 		puts("Device not responding to set address.\n");
 		ret = -EPROTO;
 		break;
